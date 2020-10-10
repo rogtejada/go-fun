@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/go-openapi/runtime/middleware"
+	goHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"gorilla-product-api/data"
 	"gorilla-product-api/handlers"
@@ -44,9 +45,12 @@ func main() {
 	getRouter.Handle("/docs", sh)
 	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
 
+	// CORS - allowing all origins
+	corsHandler := goHandlers.CORS(goHandlers.AllowedOrigins([]string{"*"}))
+
 	server := http.Server{
 		Addr:         ":8080",
-		Handler:      serveMux,
+		Handler:      corsHandler(serveMux),
 		ErrorLog:     logger,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,

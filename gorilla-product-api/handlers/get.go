@@ -12,6 +12,7 @@ import (
 
 // GetProducts handles GET requests and returns all current products
 func (p *Products) GetProducts(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Add("Content-type", "application/json")
 	listOfProducts := data.GetProducts()
 	err := data.ToJSON(listOfProducts, writer)
 
@@ -28,6 +29,7 @@ func (p *Products) GetProducts(writer http.ResponseWriter, request *http.Request
 
 // GetById handles GET requests
 func (p *Products) GetById(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Add("Content-type", "application/json")
 	id := getProductID(request)
 
 	p.logger.Println("[DEBUG] get record id", id)
