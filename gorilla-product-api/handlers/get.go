@@ -1,0 +1,54 @@
+package handlers
+
+import (
+	"gorilla-product-api/data"
+	"net/http"
+)
+
+// swagger:route GET /products products listProducts
+// Return a list of products from the database
+// responses:
+//	200: productsResponse
+
+// GetProducts handles GET requests and returns all current products
+func (p *Products) GetProducts(writer http.ResponseWriter, request *http.Request) {
+	listOfProducts := data.GetProducts()
+	err := data.ToJSON(listOfProducts, writer)
+
+	if err != nil {
+		http.Error(writer, "Unable to marshal json", http.StatusInternalServerError)
+	}
+}
+
+// swagger:route GET /products/{id} products listSingle
+// Return a list of products from the database
+// responses:
+//	200: productResponse
+//	404: errorResponse
+
+// GetById handles GET requests
+func (p *Products) GetById(writer http.ResponseWriter, request *http.Request) {
+	id := getProductID(request)
+
+	p.logger.Println("[DEBUG] get record id", id)
+
+	prod, err := data.GetProductByID(id)
+
+	switch err {
+	case nil:
+
+	case data.ErrProductNotFound:
+		p.logger.Println("[ERROR] fetching product", err)
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	default:
+		p.logger.Println("[ERROR] fetching product", err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = data.ToJSON(prod, writer)
+	if err != nil {
+		p.logger.Println("[ERROR] serializing product", err)
+	}
+}

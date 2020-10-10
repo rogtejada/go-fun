@@ -1,7 +1,21 @@
+// Package classification of Product API
+//
+// Documentation for Product API
+//
+// Schemes: http
+// BasePath: /products
+// Version: 1.0.0
+//
+// Consumers:
+// 	- application/json
+//
+// Produces:
+// 	- application/json
+// swagger:meta
+
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"github.com/gorilla/mux"
 	"gorilla-product-api/data"
@@ -10,79 +24,34 @@ import (
 	"strconv"
 )
 
-type Products struct {
-	logger *log.Logger
-}
-
-func NewProducts(l *log.Logger) *Products {
-	return &Products{l}
-}
-
-func (p *Products) GetProducts(writer http.ResponseWriter, request *http.Request) {
-	listOfProducts := data.GetProducts()
-	err := listOfProducts.ToJSON(writer)
-
-	if err != nil {
-		http.Error(writer, "Unable to marshal json", http.StatusInternalServerError)
-	}
-}
-
-func (p *Products) AddProduct(writer http.ResponseWriter, request *http.Request) {
-
-	product := request.Context().Value(KeyProduct{}).(data.Product)
-
-	p.logger.Printf("Product: %#v", product)
-	data.AddProduct(&product)
-}
-
-func (p *Products) UpdateProduct(writer http.ResponseWriter, request *http.Request) {
-	id, err := strconv.Atoi(mux.Vars(request)["id"])
-
-	if err != nil {
-		http.Error(writer, "Unable to parse id", http.StatusBadRequest)
-		return
-	}
-
-	product := request.Context().Value(KeyProduct{}).(data.Product)
-
-	err = data.UpdateProduct(id, &product)
-
-	if err == data.ErrProductNotFound {
-		http.Error(writer, "Product Not Found", http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		http.Error(writer, "Error", http.StatusInternalServerError)
-		return
-	}
-}
-
+// KeyProduct is a key used for the Product object in the context
 type KeyProduct struct{}
 
-func (p Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		product := data.Product{}
+type Products struct {
+	logger *log.Logger
+	validator *data.Validation
+}
 
-		err := product.FromJSON(request.Body)
+func NewProducts(l *log.Logger, v *data.Validation) *Products {
+	return &Products{l, v}
+}
 
-		if err != nil {
-			p.logger.Println("[ERROR]", err)
-			http.Error(writer, "Unable to unmarshal json", http.StatusBadRequest)
-			return
-		}
+var ErrInvalidProductPath = fmt.Errorf("Invalid Path, path should be /products/[id]")
 
-		err = product.Validate()
+type GenericError struct {
+	Message string `json:"message"`
+}
 
-		if err != nil {
-			p.logger.Println("[ERROR] validating product", err)
-			http.Error(writer, fmt.Sprintf("Error validating product: %s", err), http.StatusBadRequest)
-			return
-		}
+type ValidationError struct {
+	Messages []string `json:"messages"`
+}
+func getProductID(r *http.Request) int {
+	vars := mux.Vars(r)
 
-		ctx := context.WithValue(request.Context(), KeyProduct{}, product)
-		req := request.WithContext(ctx)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		panic(err)
+	}
 
-		next.ServeHTTP(writer, req)
-	})
+	return id
 }
