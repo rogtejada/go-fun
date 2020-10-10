@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"github.com/gorilla/mux"
+	"gorilla-product-api/handlers"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"gorilla-product-api/handlers"
 	"time"
 )
 
@@ -25,7 +25,7 @@ func main() {
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/products/{id:[0-9]+}", productHandler.UpdateProduct)
 	putRouter.Use(productHandler.MiddlewareValidateProduct)
-	
+
 	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/products", productHandler.AddProduct)
 	postRouter.Use(productHandler.MiddlewareValidateProduct)

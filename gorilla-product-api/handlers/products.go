@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"github.com/gorilla/mux"
 	"gorilla-product-api/data"
 	"log"
@@ -57,7 +58,7 @@ func (p *Products) UpdateProduct(writer http.ResponseWriter, request *http.Reque
 	}
 }
 
-type KeyProduct struct {}
+type KeyProduct struct{}
 
 func (p Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -66,7 +67,16 @@ func (p Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
 		err := product.FromJSON(request.Body)
 
 		if err != nil {
+			p.logger.Println("[ERROR]", err)
 			http.Error(writer, "Unable to unmarshal json", http.StatusBadRequest)
+			return
+		}
+
+		err = product.Validate()
+
+		if err != nil {
+			p.logger.Println("[ERROR] validating product", err)
+			http.Error(writer, fmt.Sprintf("Error validating product: %s", err), http.StatusBadRequest)
 			return
 		}
 
